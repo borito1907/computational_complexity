@@ -1,0 +1,1292 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\usepackage{parskip}
+\newgeometry{vmargin={15mm}, hmargin={24mm,34mm}}
+\theoremstyle{definition} 
+\newtheorem{definition}{Definition}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{proposition}[theorem]{Proposition}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\xtoc}{\lvert x \rvert ^{c}}
+\newcommand{\dprime}{\prime\prime}
+\newcommand{\opt}{\text{opt}}
+\newcommand{\pcp}{\text{PCP}}
+\DeclareMathOperator*{\E}{\mathbb{E}}
+
+\title{CS281 Notes}
+\date{March 2024}
+\author{Boran Erol}
+
+\begin{document}
+
+\maketitle
+
+\section{NP}
+
+A directed graph has an Hamiltonian cycle if and only if
+the adjacency matrix of the graph has 1's at every 
+row and column.
+
+\newpage
+
+\section{Hierarchy Theorems}
+
+\subsection{Exercises}
+
+\subsubsection{Problem 1}
+
+CMU Graduate Complexity Theory HW1 Problem 1
+
+Suppose by contradiction that there's a Turing Machine $M$ such that $M(x) \neq L(x)$ only for finitely many $x$. We can then create a new Turing Machine $M^{\prime}$ that remembers all these finitely many strings and then checks if the input is equal to one of these before proceeding to simulate $M$. Thus, $M^{\prime}(x) = L(x)$ for all $x$, which contradicts the fact that $L \notin$ TIME(n).
+
+\newpage
+
+\section{Space Complexity}
+
+\subsection{Basic Notions}
+
+Intuitions about time complexity usually break down for space complexity.
+
+Let's first define the basic notions.
+
+\begin{definition}
+    A Turing Machine $M$ runs in space $S(n)$ if
+    \begin{enumerate}
+        \item The input tape head doesn't go past the input. (You can't cheat using the input tape.)
+        \item Other heads reach at most $S (\lvert x \rvert)$ calls on any input $x$.
+    \end{enumerate}
+\end{definition}
+
+Notice that you can reuse cells, unlike time!
+
+\begin{definition}
+    $L \in SPACE(S(n))$ if $L$ is decided by a deterministic Turing Machine $M$ in space $cS(n)$ for some constant $c > 0$.
+\end{definition}
+
+\begin{definition}
+    $L \in NSPACE(S(n))$ if $L$ is decided by a non-deterministic Turing Machine $M$ in space $cS(n)$ for some constant $c > 0$.
+\end{definition}
+
+\begin{definition}
+    $L \in PSPACE(S(n))$ if $L$ is decided by a deterministic Turing Machine $M$ in space $cS(n)$ where $S(n)$ is a polynomial in $n$.
+\end{definition}
+
+\begin{definition}
+    $L \in NPSPACE(S(n))$ if $L$ is decided by a non-deterministic Turing Machine $M$ in space $cS(n)$ where $S(n)$ is a polynomial in $n$.
+\end{definition}
+
+We'd like to recover as much as we can from the theory relating to time complexity.
+
+\begin{definition}
+    A function $S: \mathbb{N} \xrightarrow{} \mathbb{N}$ is \textbf{space-constructible} if 
+    \begin{enumerate}
+        \item $S(n) \geq log(n)$
+        \item There exists a Turing Machine $M$ that maps $1^{n}$ to $S(n)$ in space $O(S(n))$.
+    \end{enumerate}
+\end{definition}
+
+Why do we have the $log(n)$ restriction?
+
+Without using $log(n)$, you can't even keep track of where you are on the input tape. There's not much you can do without doing this. You can decide the parity of the input and some other basic languages, but you can't decide interesting languages.
+
+The second property is the analogue from time constructibility. The Turing Machine needs to be self-aware. It needs to be able to produce a yardstick which it can use to monitor its own space usage. Naturally, we require the yardstick to be computable in an efficient manner, at most as much space as its measuring.
+
+\begin{lemma}
+    The universal Turing Machine $U$ simulates any Turing Machine $M$ on $x$ with a constant-factor overhead in space. 
+\end{lemma}
+\begin{proof}
+    
+\end{proof}
+
+
+\begin{theorem}
+    Let $s,S: \mathbb{N} \xrightarrow{} \mathbb{N}$ be a space constructible functions. Assume $s(n) << S(n)$. Then, $SPACE(s(n)) \subseteq SPACE(S(n))$.
+\end{theorem}
+\begin{proof}
+    We'll use a diagonalization argument. Let $D$ be the Turing Machine defined as follows.
+
+    \textbf{Input:} $x$, a description of a Turing Machine
+    \begin{enumerate}
+        \item Until $S(\lvert x \rvert)$ is exceeded, simulate $M_{x}$ on $x$.
+        \item If $M_{x}$ halts, output $\neq M_{x}(x)$.
+        \item Otherwise, output 0.
+    \end{enumerate}
+
+    Clearly, $D$ runs in space $O(S(n))$. 
+
+    There's actually an issue with this construction. What if $M_{x}$ uses very little space and loops forever? Then, $D$ doesn't decide $L(D)$ but only recognizes it. 
+    
+    The way to solve this is to use an alarm clock. We need to set the alarm clock such that we only halt Turing Machines that are looping. \textbf{We'll use a theorem later to fix this issue, and I should fill this.}
+\end{proof}
+
+\subsection{Configurations}
+
+\begin{definition}
+    A \textbf{configuration} of a (deterministic or non-deterministic) Turing Machine $M$ consists of:
+    \begin{itemize}
+        \item current state of $M$
+        \item current contents of each tape
+        \item head locations
+    \end{itemize}
+\end{definition}
+
+The key to understanding space complexity is to think in graph-theoretic terms.
+
+\begin{definition}
+    A \textbf{configuration graph $G_{m}$} of a (deterministic or non-deterministic) Turing Machine $M$ is an infinite directed graph where vertices correspond to configurations and edges correspond to transitions. In other words, there's an edge $(C,C^{\prime})$ if and only if $C$ leads to $C^{\prime}$ in one-step.
+\end{definition}
+
+Let's now recall some definitions from graph theory.
+
+\begin{definition}
+    The \textbf{degree} of a directed graph $G(V,E)$ is 
+
+    \[ \sup\{ deg^{+}(v) : v \in V\}\]
+\end{definition}
+
+Notice that $G_{M}$ has degree $1$ if $M$ is deterministic and degree $2$ if $M$ is non-deterministic.
+
+Let $x,y$ be unique strings. Since the input tape is immutable, there's no edge between $C_{M,x}$ and $C_{M,y}$ for any possible configuration.
+
+\begin{definition}
+    Let $G_{M,x}$ be the subgraph reachable from $C^{START}_{M,x}$. 
+\end{definition}
+
+When a Turing Machine $M$ halts, it doesn't need to leave its work tapes clean. However, without loss of generality, we can assume that $M$ cleans its work tapes before halting. Therefore, we can assume that there's a unique accepting configuration denoted $C^{ACCEPT}_{M,x}$.
+
+In this configuration, all work tapes are blank and all tape heads are at the origin.
+The output tape has a single $1$ on it.
+
+\begin{proposition}
+    Let $M$ be a (deterministic or non-deterministic) Turing Machine $M$ that runs in space $S(n)$. Then,
+    \begin{itemize}
+        \item We can represent vertices of $G_{M,x}$ by length $O(S(n))$ Boolean strings.
+        \item On input $x$, we can construct $C^{START}_{M,x}$ and $C^{ACCEPT}_{M,x}$ in time $O(S(n))$.
+        \item On input $x$, $C$, $C{\prime}$, we can check if $(C,C^{\prime}) \in G_{M,x}$ in time $O(S(n) + n)$.
+    \end{itemize}
+\end{proposition}
+\begin{proof}
+    A vertex of $G_{M,x}$ can be encoded by 
+    \begin{itemize}
+        \item Currents contents and head locations for each read and write tape. This is $(k-1)S(n)log\lvert \Gamma \rvert = O(S(n))$.
+        \item The current state of $M$. This is $log\lvert Q \rvert = O(1)$.
+        \item Input head location. This is $log(n + 1) \leq S(n + 1)$.
+    \end{itemize}
+
+    The second bullet point is an immediate consequence of the first bullet point. (In fact, it's even easier, since the work tapes are empty.)
+
+    The third bullet point is also trivial. Just use the transition function to check if there's an edge between the two configurations.
+\end{proof}
+
+\subsection{Time versus Space}
+
+\begin{theorem}
+    For every space-constructible $S: \mathbb{N} \xrightarrow{} \mathbb{N}$, 
+
+    \[ DTIME(S(n)) \subseteq NTIME(S(n)) \subseteq SPACE(S(n))\]
+\end{theorem}
+\begin{proof}
+    Since we don't have any time requirements, we can just try out every possible non-deterministic guess and reuse the space.
+\end{proof}
+
+\begin{theorem}
+    For every space-constructible $S: \mathbb{N} \xrightarrow{} \mathbb{N}$,
+
+    \[ SPACE(S(n)) \subseteq NSPACE(S(n)) \subseteq DTIME(2^{O(S(n))})\]
+\end{theorem}
+
+Here, an initial proof attempt might be to run all possible branches of the non-deterministic Turing Machine $M$. However, notice that $M$ can recycle the space it's using and branch $2^{n}$ times, running in $2^{n}$ time for every branch. Therefore, the simulation technique will fail.
+
+\begin{proof}
+    We can construct $G_{M,x}$ in time $2^{O(S(n))}$ since we can construct every vertex in time $O(S(n))$ and we can check every edge one by one in $O(S(n))$ as well. Then, run your favorite graph algorithm to decide if $C^{ACCEPT}_{M,x}$ is reachable from $C^{START}_{M,x}$.
+\end{proof}
+
+These bounds are not tight at all. It is still open whether $P = PSPACE$.
+
+\subsection{Deterministic versus Nondeterministic Space}
+
+\begin{theorem}[Savitch]
+    For every space-constructible $S: \mathbb{N} \xrightarrow{} \mathbb{N}$, 
+
+    \[ NSPACE (S(n)) \subseteq SPACE(S(n)^{2})\]
+\end{theorem}
+\begin{proof}
+    Let $M$ be a non-deterministic Turing Machine that runs in space $S(n)$. Recall that $G_{M,x}$ has $2^{cS(n)}$ vertices and $M(x) = 1$ if and only if $C^{ACCEPT}_{M,x}$ is reachable from $C^{START}_{M,x}$. 
+
+    We define an algorithm $LEADSTO$ as follows:
+
+    \textbf{Input:} Configurations $C,C^{\prime},$ and an integer $l$
+    
+    \textbf{Output:} Accepts if and only if $C$ leads to $C^{\prime}$ within $l$ steps in $G_{M,x}$
+
+    \begin{enumerate}
+        \item If $l = 1$, then output ACCEPT if and only if $(C,C^{\prime}) \in G_{M,x}$.
+        \item For each $C^{\prime\prime}$, if $LEADSTO(C, C^{\prime\prime}, \floor{\frac{l}{2}})$ and $LEADSTO(C^{\prime\prime}, C^{\prime}, \floor{\frac{l}{2}})$, output ACCEPT.
+    \end{enumerate}
+
+    Then, let $M(x) = LEADSTO(C^{START}_{M,x}, C^{ACCEPT}_{M,x}, 2^{cS(n)})$ and we're done. 
+
+    The running time of this algorithm is absolutely horrendous, but it doesn't matter.
+
+    Notice that the height of the recursion stack is at most $cS(n)$. Notice that the graph allocates $O(S(n))$ space for every iteration of the for loop. We thus conclude the proof.
+\end{proof}
+
+
+Can you use this idea to prove that there exists an oracle $O$ such that $EXP^{O} = NEXP^{O}$?
+
+\subsection{PSPACE-Completeness}
+
+One-way to understand the class PSPACE is to find complete problems. 
+
+\begin{definition}
+    $L$ is said to be \textbf{PSPACE-Complete} if
+
+    \begin{enumerate}
+        \item $\forall L^{\prime} \in \text{PSPACE}: L^{\prime} \leq_{p} L $
+        \item $L \in \text{PSPACE}$
+    \end{enumerate}
+\end{definition}
+
+Why are we still considering polynomial time reductions instead of polynomial space reductions? Notice that if we consider polynomial space reductions, every language in PSAPCE is trivially PSPACE-Complete 
+
+\begin{definition}
+    A \textbf{totally quantified Boolean formula (TQBF)} has the form 
+
+    \[ Q_{1}x_{1}Q_{2}x_{2}...Q_{n}x_{n}: \phi(x_{1},x_{2},...,x_{n})\]
+
+    where $Q_{i}$ are logical quantifiers.
+\end{definition}
+
+This formula doesn't have any free variables in it. All variables are bound to quantifiers. Therefore, TQBFs are constants!
+
+We also have \textbf{partially quantified Boolean formulas}.
+
+\begin{definition}
+    $TQBF = \{ \tau: TQBF_{\tau} \text{ is true} \}$
+\end{definition}
+
+Notice that $SAT \leq_{p} TQBF$ since $SAT$ is $TQBF$ where all quantifiers are $\exists$.
+
+\begin{lemma}
+    $TQBF \in \text{PSPACE}$
+\end{lemma}
+\begin{proof}
+    We construct a recursive algorithm.
+
+    
+\end{proof}
+
+Recursive algorithms work really well with space.
+
+Let's now prove that $TQBF$ is PSPACE-Hard.
+
+\begin{lemma}
+    $TQBF$ is PSPACE-Hard.
+\end{lemma}
+\begin{proof}
+    Let's start with a failed attempt. Let $L \in \text{PSPACE}$ and $M$ be a Turing Machine that decides $L$ in space $S(n)$, where $S(n) \leq n^{c}$ for some $c > 0$ for large enough $n$. By Savitch's construction, $M(x) = LEADSTO(C^{START}_{M,x},C^{ACCEPT}_{M,x},2^{cS(n)})$. 
+
+    Failed attempt: \[LEADSTO(C,C^{\prime}, 2^{cS(n)}) = \exists C^{\prime\prime}: LEADSTO(C,C^{\prime\prime}, 2^{cS(n)}) \land LEADSTO(C^{\prime\prime},C^{\prime}, 2^{cS(n)}) \]
+\end{proof}
+
+\begin{corollary}
+    $L \in \text{PSPACE}$ if and only if there exists some polynomial time Turing Machine $M$ such that
+\end{corollary}
+
+\textbf{Do we need big-O notation to make this fully formal?}
+
+No, because you can store the first finitely many strings in the language of short length in the state of your Turing Machine $M$.
+
+There's a recurring theme: adding quantifiers increases computational power. 
+
+\[ \text{SPACE = TIME + QUANTIFIERS}\]
+
+\[ \text{P = CNF + EXISTS}\]
+
+\[ \text{NP = CNF + EXISTS (Cook-Levin's Theorem)}\]
+
+\[ \text{PSPACE = CNF + polynomially many quantifiers}\]
+
+Here's an astronomical analogy:
+
+EXP is the limits of the universe. We'll never reach there. PSPACE corresponds to the observable universe. This is where light can reach the earth. With a PSPACE computation, you can start it and the computation will produce an output after thousands of generations.
+
+What about CNF + a constant number of quantifiers? If we have a single quantifier, 
+
+
+\[ REACH = \{ (G,u,v) : \exists \text{ a path from u to v}\}\]
+
+Guess the logarithmic sequence in Savitch's proof. Since there's finitely many, we're good.
+
+\textbf{Challenge Problem}
+
+\[ UNREACH = \{ (G,u,v) : \text{ there's no path from u to v}\}\]
+
+Prove that $UNREACH \in NSPACE(\log n)$.
+
+\newpage
+
+\section{The Polynomial Hierarchy}
+
+\subsection{Motivation}
+
+The right way to approach the polynomial hierarchy is to ponder the role of quantifiers in computation. 
+
+$n^{O(1)}$ quantifiers is usually overkill. However, one quantifier is often not enough. Here's an example:
+
+\[ \text{MINDNF} = \{ (\phi, 1^{s}) : \exists \text{ DNF formula } \phi^{\prime} \text{ of size at most } s \text{ such that } \phi \equiv \phi^{\prime} \}\]
+
+There's a natural solution to this problem using two quantifiers: $\exists \phi^{\prime} \forall x: \phi(x) = \phi^{\prime}(x)$
+
+It's not known whether there's a single quantifier solution to this problem, and it is believed not to exist.
+
+\begin{definition}
+    Let $k \geq 1$. $L \in \Sigma_{k}$ if and only if for some $c > 0$ and some polynomial time Turing Machine $M$,
+
+    \[ x \in L \iff \exists u_{1} \in \{0,1\}^{n^{c}}: \forall u_{2} \in \{0,1\}^{n^{c}}: ...: M(x,u_{1},...,u_{k}) \text{ accepts}  \]
+\end{definition}
+
+\begin{definition}
+    Let $k \geq 1$. $L \in \Pi_{k}$ if and only if for some $c > 0$ and some polynomial time Turing Machine $M$,
+
+    \[ x \in L \iff \forall u_{1} \in \{0,1\}^{n^{c}}: \exists u_{2} \in \{0,1\}^{n^{c}}: ...: M(x,u_{1},...,u_{k}) \text{ accepts}  \]
+\end{definition}
+
+Notice that co$\Sigma_{k}$ = $\Pi_{k}$.
+
+Observe that $\forall k \geq 0: \Sigma_{k} \subseteq \Sigma_{k+1} \land \Pi_{k} \subseteq \Pi_{k+1}$ by ignoring the last quantifier.
+
+Similarly,  $\forall k \geq 0: \Sigma_{k} \subseteq \Pi{k+1} \land \Pi_{k} \subseteq \Sigma_{k+1}$ by ignoring the first quantifier.
+
+This gives rise to a nice mnemonic structure, which is the topic of the next section.
+
+\subsection{Lattice Structure}
+
+It is believed that all containments in this lattice are proper. 
+
+\begin{definition}
+    \[ \text{PH} = \Sigma_{1} \cup \Sigma_{2} ... = \Pi_{1} \cup \Pi_{2} ...\]
+\end{definition}
+
+This is like a Jenga tower, pinching it horizontally or vertically causes it to collapse.
+
+Suppose you'd like to prove a result in computational complexity and you can't prove it directly. One (possibly) easier goal is to prove your result assuming $P \neq NP$. One (possible) even easier goal is to prove your result assuming that the polynomial hierarchy collapses at some level $k$.
+
+\begin{theorem}
+    If $\Sigma_{k} = \Pi_{k}$ for some $k$, then $PH = \Sigma_{k}$.
+\end{theorem}
+
+This can be thought of pinching the polynomial Jenga tower horizontally.
+
+\begin{proof}
+    We'd like to show that $\forall m \geq n: \Sigma_m \subseteq \Sigma_k \land \Pi_{m} \subseteq \Sigma_{k}$.
+
+    We'll argue by inducting on $m$. The base case is our assumption. Suppose the statement holds for some $m \in \mathbb{N}$. 
+\end{proof}
+
+
+Logspace Reductions are also used in computational complexity that is (possibly) weaker than polynomial time reductions. Other than that, polynomial time reductions are the "finest" reductions out there.
+
+Conversion to a depth-2 formula requires a quantifier.
+
+The empty language and its complement are P-Complete are polynomial time reductions for trivial reasons.
+
+\begin{theorem}
+    If some $L$ is PH-Complete, then $PH = \Sigma_{k}$ for some $k$.
+\end{theorem}
+\begin{proof}
+    Assume $L$ is PH-Complete. Then, $\exists k \in \mathbb{N}: L \in \Sigma_{k}$. But then every $L^{\prime}$ in PH reduces deterministically in polynomial time to $L$, so $PH = \Sigma_{k}$.
+\end{proof}
+
+\subsection{Characterization of $\Sigma_{k}$ using oracles}
+
+\begin{theorem}
+    $NP^{NP} = \Sigma_{2}$
+\end{theorem}
+\begin{proof}
+    We first show $\Sigma_{2} \subseteq NP^{SAT}$. Let $L \in \Sigma_{2}$. Then, 
+
+    \[ x \in L \iff \exists u_{1}: \forall u_{2}: M(x,u_{1},u_{2}) = 1 \iff \exists u_{1}: \neq (\exists u_{2}: M(x,u_{1},u_{2})\]
+
+    We now show the following inclusion. 
+
+    
+\end{proof}
+
+\newpage
+
+\section{Randomness}
+
+\begin{lemma}
+    BPP = coBPP
+\end{lemma}
+\begin{proof}
+    
+\end{proof}
+
+\subsection{Randomness vs. the Polynomial Hierarchy}
+
+In this section, we'll prove the theorem by Sipser and Gacz that shows $BPP \subseteq \Pi_{2} \cap \Sigma_{2}$.
+
+Before proving the theorem, observe that $BPP \subseteq PSPACE$ trivially since we can run the Turing Machine $M$ for all possible randomness $r$ and tally up the results.
+
+\begin{theorem}
+    $BPP \subseteq \Pi_{2} \cap \Sigma_{2}$
+\end{theorem}
+\begin{proof}
+    Let $M$ be a polynomial time Turing Machine such that for all strings $x$,
+
+    \[ \Pr[M(x,r) = L(x)] > 1 - \frac{1}{\lvert x \rvert ^{c}}\]
+
+    We're going to prove the following claim: 
+
+    \[ x \in L \iff \exists u_{1},...,u_{\lvert x \rvert^{c}} \in \{0,1\}^{\lvert x \rvert ^{c}}: \forall r \in \{0,1\}^{\lvert x \rvert ^{c}}: \bigvee_{i=1}^{\lvert x \rvert^{c}} M(x,r \oplus u_{i}) = 1\]
+
+    Notice that the right hand-side has two logical quantifiers. Moreover, the operation is polynomial time. Then, $BPP \subseteq \Sigma_{2} \implies coBPP \subseteq \Pi_{2}$. Since $BPP = coBPP$, we conclude the proof.
+
+    Let's now prove the claim. We define the notion of an \textit{accepting set}. Fix $x \in L$ and define 
+
+    \[ A_{x} = \{ r: M(x,r) = 1\}\]
+
+    Notice that 
+
+    \[ M(x,r \oplus u_{i}) = 1 \iff r \oplus u_{i} \in A_{x} \iff r \in A_{x} \oplus u_{i}\]
+
+    Then,
+
+    \[ \bigvee_{i=1}^{\lvert x \rvert^{c}} M(x,r \oplus u_{i}) = 1 \iff r \in \bigcup_{i} (A_{x} \oplus u_{i})\]
+
+    Since this is true for all $r \in \{0,1\}^{*}$, we have that 
+
+    \[ \bigcup_{i} (A_{x} \oplus u_{i}) = \{0,1\}^{\lvert x \rvert ^{c}}\]
+
+    We have two possible cases:
+
+    \textbf{Case 1:} $x \notin L$
+    Intuitively, accepting sets are really small. More formally,
+
+    \[ \lvert A_{x} \rvert \leq \frac{1}{\xtoc} \cdot 2^{\xtoc}\]
+
+    Then, 
+
+    \[\lvert \bigcup_{i} (A_{x} \oplus u_{i}) \rvert \leq \xtoc \cdot \lvert A_{x} \rvert < 2^{\xtoc}\]
+    
+
+    \textbf{Case 2:} $x \in L$
+    Intuitively, accepting sets are almost the entire set. 
+
+    Then, 
+
+    \[ \lvert A_{x} \rvert \geq (1 - \frac{1}{\xtoc}) \cdot 2^{\xtoc}\]
+
+    We're going to use the probabilistic method to produce the $u_{i}$'s. 
+
+    If we pick the shifts at random, the probability that we cover everything is positive. Then, by the probabilistic method, this gives us a concrete instantiation. 
+\end{proof}
+
+\subsection{Exercises}
+
+\subsubsection{Exercise 1}
+
+In the following definition, $r$ is an infinite random string.
+
+\begin{definition}
+    L $\in$ ZPP if there's a Turing Machine $M$ such that for all strings $x \in \{0,1\}^{*}$,
+
+    \begin{itemize}
+        \item $M(x,r) = L(x)$ if $M$ halts on $x,r$
+        \item $\E_{r}[\text{Runtime of $M$ on $(x,r)$}] < \xtoc$
+    \end{itemize}
+\end{definition}
+
+\textbf{Challenge Problem:} We'd like to trade correctness of running time. Specifically, we'd like to prove ZPP $=$ RP $\cap$ coRP.
+
+If you have an algorithm that has no false positives and another algorithm that has no false negatives, you can combine them into an algorithm that has zero error and expected polynomial running time.
+
+The solution to this challenge problem is related to the ideas from the coin flip problems.
+
+\subsubsection{Solution}
+
+Let $L \in$ ZPP. Let $A$ be a zero-error randomized algorithm
+for $L$ such that for all strings $x$, 
+
+\[ \E_{r}[\text{run time A(x,r)}] \leq \xtoc\]
+
+Using Markov's inequality,
+
+\[ \Pr_{r}[\text{run time A(x,r) exceeds $100 \xtoc$}] \leq \frac{1}{100}\]
+
+Conversely, let $L \in$ RP $\cap$ coRP.
+Then, we have algorithms $A^{\prime}, A^{\prime\prime}$ that run
+in time $\xtoc$ such that $A^{\prime}$ has no false positives and
+$A^{\dprime}$ has no false negatives.
+
+Here's how we define $A$:
+
+\begin{enumerate}
+    \item Sample a random string $r$.
+    \item If $A^{\prime}(x,r) = 1$, return 1.
+    \item If $A^{\dprime}(x,r) = 0$, return 0.
+    \item Repeat the first three steps.
+\end{enumerate}
+
+Our new algorithm is clearly zero error! Moreover, we have that
+in every round
+
+\[ \Pr_{r}[\text{A terminates}] \geq \frac{2}{3} \]
+
+Then, the expected the running time is
+
+\[ \sum_{i = 1}^{\infty} 2 \xtoc \cdot i \frac{1}{3^{i-1}} \frac{2}{3} \]
+
+\[ \frac{4}{3} \xtoc \sum_{i = 1}^{\infty} \frac{i}{3^{i-1}} \]
+
+\[ \leq \frac{1}{3} (\frac{\sqrt(3)}{3})^{i} \]
+
+Notice that the following attempt doesn't work:
+
+Let $T$ be the running time. Then, we have that
+
+\[ T \leq \frac{2}{3} 2 \xtoc + \frac{1}{3}(2 \xtoc + T)\]
+
+However, this assumes that $T$ is finite, which is what we're
+trying to prover anyway.
+
+\textbf{Can you just argue using the number of rounds?}
+
+\newpage
+
+\section{Evolution of Mathematical Proofs}
+
+Thales of Miletus is the first recorded mathematician. Interestingly,
+his proofs are much more interactive.
+
+
+Euclid, in 300 BC, was the first person to use axioms to develop geometry.
+
+\newpage
+
+\section{Interactive Proofs}
+
+\subsection{Motivation and Definitions}
+
+\begin{definition}
+    $L \in$ IP if there's a polynomial time machine $V$ such that 
+
+    \begin{itemize}
+        \item If $x \in L$, then there's a prover $P$ such that 
+
+        \[ \Pr_{r \in \{0,1\}^{\xtoc}}[V^{P}(x,r) = 1] \geq \frac{2}{3}\]
+
+        \item If $x \notin L$, then for all provers $P$ we have that 
+
+            \[ \Pr_{r \in \{0,1\}^{\xtoc}}[V^{P}(x,r) = 0] \geq \frac{2}{3}\]
+    \end{itemize}
+\end{definition}
+
+\begin{definition}
+    The \textbf{completeness} of an interactive proof is the probability that $V$ accepts for some $x \in L$.
+\end{definition}
+
+\begin{definition}
+    The \textbf{soundness} of an interactive proof is the probability that $V$ rejects for some $x \notin L$.
+\end{definition}
+
+In isolation, these are easy to achieve. To achieve perfect soundness, reject everything. To achieve perfect completeness, accept everything. However, achieving high soundness and completeness together isn't easy.
+
+The power of interactive proofs comes from the fact that $V$ has access to randomness. If $V$ is deterministic, this reduces to NP again.
+
+\begin{lemma}
+    Suppose there's an interactive proof system for deciding some language
+    $L$ where $V$ is deterministic. Then, $L \in NP$. The converse of this
+    statement is also true.
+\end{lemma}
+\begin{proof}
+    If $V$ is determinstic, the prover can just compute the entire
+    interaction on its own and send the transcript $\pi$ to a verifier
+    that just verifies that the transcript is an actual transcript
+    by also running $V$.
+\end{proof}
+
+\begin{lemma}
+    If there's an interactive proof where the prover $P^{\prime}$ is allowed randomness
+    for deciding $L$, there's an interactive proof with a deterministic prover $P$.
+\end{lemma}
+\begin{proof}
+    
+\end{proof}
+
+It's crucial that we're picking the prover \textbf{based on the verifier} here. This is about
+the definition of IP. In IP, we pick a verifier such that all provers act a certain way.
+
+\subsection{Graph Non-Isomorphism}
+
+Graph isomorphism (GI) is suspected to be NP-Intermediate.
+
+Graph non-isomorphism (GNI) is not known to be in BPP or NP. However, it is clearly in coNP.
+
+\begin{lemma}
+    GNI is in IP.
+\end{lemma}
+\begin{proof}
+    Here's our verifier that takes as input $(G_{1}, G_{2})$.
+
+    \begin{enumerate}
+        \item Sample a random permutation $\pi \in S_{n}$ and $i \in \{1,2\}$.
+        \item Send $G = \pi(G_{i})$ to the prover.
+        \item The prover sends a bit $b$. If $i = b$, accept. Otherwise, reject.
+    \end{enumerate}
+\end{proof}
+
+\subsection{IP vs. PSPACE}
+
+\begin{lemma}
+    IP $\subseteq$ PSPACE.
+\end{lemma}
+
+
+Let's first provide an incorrect proof attempt.
+
+\begin{proof}[incorrect proof attempt]
+    Let $L \in$ IP and let $V$ be a polynomial time verifier for $L$. Let $x$ be a string. Then,
+
+    \[ \Pr_{r}[V^{P}(x,r) = 1] \geq \frac{2}{3} \text{ if $x \in L$}\]
+
+    \[ \Pr_{r}[V^{P}(x,r) = 1] \leq \frac{1}{3} \text{ if $x \notin L$}\]    
+
+    Let $a_{1},...,a_{\xtoc}$ be the max prover's answers. We can then loop over all possible values of $r$ and tally $V^{a_{1},...,a_{\xtoc}}(x,r) = 1$ to calculate the probability.
+\end{proof}
+
+This doesn't work, since it assumes the prover speaks once at the beginning of the protocol and doesn't produce answers $a_{1},...,a_{\xtoc}$ dependent on $r$. $a_{1},...,a_{\xtoc}$ should come after $r$ since the provers answers depend on $r$. 
+
+Here's the actual proof:
+
+\begin{proof}
+    Notice that $V$ is a well-defined algorithm, but $P$ is not.
+    Our goal is to maximize the following probability over all choices of $P$.
+
+    The height of the tree is bounded above by $\xtoc$ since the running time of $V$ is bounded by $\xtoc$.
+    The arity? of every node in the tree is bounded above by $2^{\xtoc}$ since that is the longest
+    message $V$ can read.
+
+    Notice that picking a $P$ corresponds to picking an action of $P$ at every layer of this tree.
+    Then, to find the maximum probability of acceptance, we should pick the action that maximizes the
+    probability of acceptance at each step. This corresponds to picking one branch (given by orange).
+
+    Now, focus on the bottom layer. In the bottom layer, the probability that $V$ accepts is
+    completely independent of $P$. Therefore, we can just calculate probabilities of acceptance and rejection.
+
+    Let's now formalize the algorithm:
+
+    Algorithm $M(u_{1},...,u_{i}):$
+    \begin{enumerate}
+        \item If $i = \xtoc$, return $V(u_{1},...,u_{\xtoc})$.
+        \item If it's a $P$ layer, return $\max_{u_{i+1}} M(u_{1},...,u_{i+1})$.
+        \item If it's a $V$ layer, return $\mathbb{E}{u_{i+1}} M(u_{1},...,u_{i+1})$.
+    \end{enumerate}
+
+    There's a technicality we have to concern ourselves with.
+    How do we calculate the expectation in $V$ layers?
+
+    Sherstov: You can't condition on the first $n$ bits of $r$ and have a uniform distribution. You can't pick
+    fresh randomness during the process. To see this, try modifying the proof for $GNI \in IP$.
+
+    For the nominator, tally up all the $r$'s that take that branch.
+
+    For the denominator, tally up all the $r$'s that end up in that layer.
+
+    This sounds a lot like conditional probability. Specifically, it sounds like we're conditioning on an $r$
+    that reaches that $V$ node and then calculating the conditional probability a branch is taken.
+
+    However, you can't reduce this proof to uniform conditional probabiltiies, because the verifier
+    might be acting as it pleases.
+\end{proof}
+
+Let's now prove the opposite inclusion. So far, we've seen that NP and BPP are contained in IP and GNI $\in$ IP.
+
+\newpage
+
+\subsection{Warmup: $coNP \subseteq IP$}
+
+Let's now show that coNP is also contained in IP. The next proof is a beautiful demonstration of the power of algebraic reductions.
+
+UNSAT is coNP-Complete and it's a combinatorial problem. We'll turn UNSAT into an algebraic problem. We'll then use the
+additional algebraic structure in order to produce efficient interactive protocols. 
+
+The algebraic object will be an arithmetic circuit. Arithmetic circuits with addition and multiplication gates can 
+be seen as elements in $F[x_{1},...,x_{n}]$. Using this dictionary, we can define the degree of an arithmetic 
+circuit $C$ as the degree of the multivariate polynomial $f \in F[x_{1},...,x_{n}]$.
+
+The next lemma shows us that arithmetic circuits have efficient interactive protocols.
+
+
+\begin{lemma}\label{evaluating_acs_in_ip}
+    The following problem has a polynomial time IP.
+
+    Input: An arithmetic circuit C over F, $a \in F$
+
+    Goal: Check whether 
+
+    \[ \sum_{x \in \{0,1\}^{n}} C_{x} = a\]
+
+    Completeness =  1
+    
+    Soundness = $1 - \frac{n degC}{\lvert F \rvert}$
+\end{lemma}
+\begin{proof}
+    We'd like to calculate
+    
+    \[ \sum_{x_{1} \in \{0,1\}} \sum_{x_{2} \in \{0,1\}} ... \sum_{x_{n} \in \{0,1\}} C(x_{1},...,x_{n})\]
+
+    Notice that 
+
+    \[ \sum_{x_{2} \in \{0,1\}} ... \sum_{x_{n} \in \{0,1\}} C(x_{1},...,x_{n})\]
+
+    is a polynomial $p \in F[x_{1}]$ and $deg(p) \leq deg(C)$.
+
+    Moreover, $\sum_{x} C(x) = a \iff p(0) + p(1) = a$.
+
+    In the protocol, the verifier asks for $p(x_{1})$ and the prover sends $\tilde{p}(x_{1})$. Then, $V$ picks a random $r \in F$ and accepts if $p(r) = \tilde{p}(r)$. In order to check $p(r) = \tilde{p}(r)$, we use recursion.
+
+    Let's now analyze this algorithm. If the prover is truthful, it can convince the verifier with probability 1. Otherwise, if $p \neq \tilde{p}$, we have that 
+
+    \[ \Pr_{r}[\tilde{p}(r) \neq p(r)] \geq 1 - \frac{deg(C)}{\lvert F \rvert}\]
+
+    Then, using a union bound,
+
+    \[ \Pr_{r}[\text{Verifier concludes that $\tilde{p}(r) \neq p(r)$}] \geq 1 - \frac{degC}{\lvert F \rvert} - \frac{(n-1) degC}{\lvert F \rvert} = 1 - \frac{n degC}{\lvert F \rvert} \]
+\end{proof}
+
+\begin{lemma}\label{conp_is_contained_in_ip}
+    coNP $\subseteq$ IP
+\end{lemma}
+\begin{proof}
+    Recall that UNSAT is coNP-Complete. Thus, it suffices to show that UNSAT is in IP.
+
+    Let $\phi$ be a CNF formula and $C_{\phi}$ be the arithmetic circuit for $\phi$ over a field $F$ such that $\lvert F \rvert \geq \lvert \phi \rvert 2^{n}$. 
+
+    Notice that $C_{\phi}$ acts exactly like $\phi$ on Boolean inputs. However, it is richer: we can evaluate $C_{\phi}$ on non-Boolean inputs.
+
+    Since $F$ is large enough, 
+
+    \[ \phi \in \text{ UNSAT} \iff \sum_{x \in \{0,1\}^{n}} C_{\phi}(x) = 0\]
+
+    Moreover, there's an IP protocol for checking whether the right hand side with soundness greater than 
+
+    \[ 1 - \frac{n \lvert \phi \rvert}{p} \geq 1 - \frac{n}{2^{n+1}}\]
+
+    You can make the field $F$ smaller if you work harder, but we don't care.
+\end{proof}
+
+\newpage
+
+Let's now prove the actual result.
+
+\begin{lemma}\label{pspace_is_contained_in_ip}
+    PSPACE $\subseteq$ IP
+\end{lemma}
+
+Here's a failed naive attempt:
+
+\begin{proof}[incorrect proof attempt]
+    Since TQBF is PSPACE-Complete, it suffices to show that TQBF $\in$ IP.  Here's the verifier with input $\exists x_{1} \forall x_{2} ... \phi(x_{1},...,x_{n})$.
+
+    We'll use an interactive proof to check that
+
+    \[ \sum_{x_{1} \in \{0,1\}} \prod_{x_{2} \in \{0,1\}} ... C_{\phi}(x_{1},...,x_{n}) \neq 0\]
+\end{proof}
+
+There are many issues with this proof attempt. The more interesting thing is that this proof is actually pretty close to the actual solution.
+
+One issue is that the field needs to have size at least $2^{2^{n/2}}$.
+
+Another issue is that the degree of this polynomial is $2^{n/2}$. Therefore, the prover can't send $p(x_{1})$.
+
+Here is where most researchers would stop. However, a good researcher would have the instinct to try to patch this solution.
+
+To researchers in TCS today, you look at this object and you realize one thing: this object is over-algebrized. You have too much algebraic structure that is irrelevant to the problem at hand, which only concerns Boolean values. Therefore, we should get rid of it. We'll trade algebraic structure with efficiency.
+
+We'll define three operators on $F[x_{1},x_{2},...,x_{n}]$:
+
+\begin{itemize}
+    \item $\forall_{i} : q(x_{1},...,x_{i},...,x_{n}) \mapsto q(x_{1},...,0,...,x_{n})q(x_{1},...,1,...,x_{n})$
+
+    \item $\exists{i} : q(x_{1},...,x_{i},...,x_{n}) \mapsto (1 - q(x_{1},...,0,...,x_{n}))(1 - q(x_{1},...,1,...,x_{n}))$
+
+    \item $L_{i}: q(x_{1},...,x_{i},...,x_{n}) \mapsto (1-x_{i})q(x_{1},... ,0,...,x_{n})) + x_{i}q(x_{1},... ,1,...,x_{n}))$ 
+\end{itemize}
+
+The first two operators at most double the degree. The third operator changes the degree in $x_{i}$ to $1$. 
+The value of $q$ is unaffected on $\{0,1\}^{n}$.
+The third operator gets rid of the irrelevant algebraic structure 
+and buys us some efficiency by ensuring that the degree doesn't blow up.
+
+\begin{lemma}
+    There is a polynomial time interactive protocol for the following problem.
+
+    Input: $O_{1}, O_{2},...,O_{m} \in \{\exists_{1},\forall_{1},L_{1},...,\exists_{n},\forall_{n},L_{n}\}$. An arithmetic $C$ over $F$. $(u_{1},...,u_{n}) \in F^{n}$,$a \in F$. 
+
+    Goal: Check if 
+
+    \[ (O_{1}O_{2}...,O_{m})(u_{1},...,u_{m}) = a\]
+
+    Completeness = 1
+
+    Soundness = $1 - \frac{mD}{\lvert F \rvert}$, where $D = \max_{i}\{\deg (O_{i}O_{i+1}...O_{m}C)\}$.
+\end{lemma}
+\begin{proof}
+    Let $F$ be a field and $C$ be an arithmetic circuit over $F$.
+    Let $O_{1} \in \{\exists_{i}, \forall_{i}, L_{i} \}$.
+    Let $p(x_{i}) = (O_{2}O_{3}...O_{m}C)(u_{1},...,u_{i-1},x_{i},u_{i+1}, ..., u_{n})$.
+    Here, $x_{i}$ is purely formal. $x_{i}$ doesn't stand for anything.
+    
+    Here's the protocol:
+
+    \begin{enumerate}
+        \item The verifier asks for $p(x_{i})$.
+        \item The prover sends $\tilde{p}(x_{i})$.
+        \item The verifier randomly samples $r \in F$.
+        \item The verifier checks $p(r) = \tilde{p}(r)$ using recursion.
+        \item If the verifier thinks $p(r) = \tilde{p}(r)$, the verifier returns $(O_{1}, \tilde{p})(u_{i}) = a$ and accepts accordingly.
+        \item If the verifier thinks $p(r) \neq \tilde{p}(r)$, the verifier rejects.
+    \end{enumerate}
+
+    Notice that the verifier can check whether $p(r) = \tilde{p}(r)$ by checking whether
+    $(O_{2}O_{3}...O_{m}C)(u_{1},...,u_{i-1},r,u_{i+1}, ..., u_{n}) = \tilde{p}(r)$.
+
+
+
+    Notice that even for this protocol to be efficient, $D$ has to be a polynomial in $m,n, \lvert C \rvert$.
+
+    By assumption, $\deg{p} \leq D$.
+
+    Assume $(O_{1}O_{2}...,O_{m})(u_{1},...,u_{m}) = a$. Then, we have two cases since \textbf{argue why yourself}
+
+    Case 1: $(O, \tilde{p})(u_{i}) \neq a$
+    
+    In this case, we always reject.
+
+    Case 1: $(O, \tilde{p})(u_{i}) \neq a$
+    
+    In this case, we always reject.
+    
+    Case 2: $\tilde{p} \neq p$
+
+    By Schwarz-Zippel, $\Pr_{r}[p(r) \neq \tilde{p}(r)] \leq \frac{D}{\lvert F \rvert}$.
+
+    Then, the probability that the verifier thinks $p(r) = \tilde{p}(r)$
+\end{proof}
+
+You might think that this is stronger than what we need. In the proof, we're only going to evaluate the circuit 
+at the all zeros point. However, we need to be able calculate arbitrary sums for recursive steps, so we in fact
+need the full power of this lemma.
+
+Now, notice that
+
+\[ \exists_{x_{1}} \forall_{x_{2}} \exists_{x_{3}}... \exists_{x_{n-1}} \forall_{x_{n}} \phi(x_{1},...,x_{n}) = 1 \]
+
+is equivalent to
+
+% TODO: Fix this error. 
+% \[ \exists_{x_{1}} L_{1} \forall_{x_{2}} _{1}L_{2} \exists_{x_{3}}... \exists_{x_{n-1}} L_{1} L_{2} ... L_{n}  \forall_{x_{n}} \phi(x_{1},...,x_{n})(0,0,0,...,0) = 1 \]
+
+Notice that all intermediate degrees are less than or equal to $2 \deg{C_{\phi}}$, since we linearize after
+every quantifier.
+
+Also notice that we're "evaluating" the arithmetic circuit at $(0,0,0,...,0)$, but this is only
+to be formally correct. At this point, the arithmetic circuit is already a constant, so it doesn't
+matter where we evaluate it.
+
+
+The fact that IP = AM follows from the IP Characterization Theorem.
+
+Let $IP(n)$ and $AM(n)$ denote the class of languages with $n$ round IP and AM proofs, respectively.
+
+Then, $IP(n) \subseteq AM(n+2)$.
+
+Babai and Moran: $IP(2n) \subseteq IP(n)$.
+
+In Public Coin versus Private Coin Interactive Protocols, Goldwasser and Sipser prove that
+every private coin interactive protocol has a corresponding public coin interactive protocol
+(an Arthur-Merlin protocol) 
+
+Goldreich has a 2019 paper called On Emulating Interactive Protocols with public coins.
+
+\begin{theorem}
+    Let $L$ be the language of an interactive protocol 
+    with private coins. Then, there's an Arthur-Merlin protocol
+    for $L$.
+\end{theorem}
+\begin{proof}
+    
+\end{proof}
+
+\begin{theorem}
+    If GI is NP-Complete, the polynomial hierarchy collapses.
+\end{theorem}
+\begin{proof}
+    
+\end{proof}
+
+\newpage
+
+\section{Probabilistically Checkable Proofs}
+
+\subsection{Motivation}
+
+The motivation for PCPs came from practitioners. If SAT is hard to solve, can we try to approximate it?
+In the quest to prove the hardness of approximation for 3SAT, PCPs were discovered.
+
+After PCPs were discovered, a headline in NYT read: "New Short Cut Found for 
+Long Math Proofs".
+
+Sherstov thinks this is the most important achievement of theoretical computer science
+since Cook-Levin.
+
+Traditional proofs (NP) has a "proof" (witness) and an efficient verifier that checks the validity
+of the proof.
+
+Let $\pi$ be a proof. Then, 
+
+\[ \max_{\pi} V^{\pi}(x) = L(x) \]
+
+In other words, the verifier can only be convinced if $x \in L$.
+
+Interactive proofs show that if you allow interaction, this process becomes incredibly powerful, bumping
+NP up to PSPACE.
+
+In PCPs, you make the verifier less powerful compared to IPs. You just allow the verifier
+oracles access to the proof. PCPs are a TA's dream.
+
+Let $V$ be a deterministic Turing Machine.
+Let $L$ be a language and $x$ be a string. Let $n = \lvert x \rvert$.
+Let $\pi$ a proof of length $\text{poly}(n)$.
+
+The verifier will only read $O(1)$ bits of the proof. Then, we consider
+
+\[ \max_{\pi} V^{\pi}(x) = L(x) \]
+
+However, this makes the verifier too weak! We can just enumerate all possible bits the verifier probes
+and decide whether the verifier accepts or rejects in polynomial time. This is not weaker than polynomial time
+since the verifier runs in polynomial time.
+
+In order to make the verifier stronger, we allow the verifier some randomness $r$ and consider 
+
+\[ \max_{\pi} \Pr_{r}[V^{\pi}(x,r)] = 1 \text{ if $x \in L$} \]
+
+\[ \max_{\pi} \Pr_{r}[V^{\pi}(x,r)] \leq \frac{1}{3} \text{ if $x \notin L$} \]
+
+Don't get weirded out by these parameters. These can be adjusted by error correction and sequential repetition.
+
+\newpage
+
+\subsection{Introduction and Definitions}
+
+\begin{definition}
+    Let $P$ be a computationally unbounded prover and $V$ be a
+    probabilistic polynomial-time algorithm. We say that $(P,V)$
+    is a \textbf{PCP system} for a language $L$ with completeness error
+    $\epsilon_{c}$ and soundness error $\epsilon_{s}$ if the following holds:
+
+    Completeness: \[\forall x \in L: \Pr[V^{\pi}(x,r) = 1] \geq 1 - \epsilon_{c} \]
+
+    Soundness: \[\forall x \notin L: \forall \tilde{\pi}: \Pr[V^{\tilde{\pi}}(x,r) = 1] \leq \epsilon_{s} \]
+\end{definition}
+
+Let's now define some parameters.
+
+$\Sigma$ is the alphabet.
+$l$ is the proof size.
+$q$ is the query complexity.
+$r$ is the randomness complexity.
+
+\begin{definition}
+    We denote by the complexity class \textbf{PCP} languages decidable
+    by PCP proof system with paramers $\Sigma = exp(n), l = exp(n), q = poly(n),
+    r = poly(n)$.
+\end{definition}
+
+Notice that the proof can't be larger than exponential size since we can't query
+larger proofs: queries of exponential proofs have polynomial size.
+
+Here are some questions we can explore:
+
+\begin{enumerate}
+    \item Which languages have PCPs? At least more than PSPACE.
+    \item Do PCPs have benefits for NP languages? Yes.
+    \item Do PCPs have benefits for tractable languages? Yes.
+    \item Are there ZK PCPs for NP languages? Yes.
+\end{enumerate}
+
+As seen, PCPs are very powerful. However, the PCP model is weird:
+the PCP verifier has oracle access to a large proof. 
+
+PCPs are useful for hardness of approximation problems and interactive
+arguments in cryptographic primitives.
+
+We can actually show that $\pcp \subseteq NEXP$.
+
+\begin{lemma}
+    For non-adaptive verifiers, $l \leq 2^{r}q$.
+    
+    For adaptive verifiers, $l \leq 2^{r}\lvert \Sigma \rvert^{q}q$.
+\end{lemma}
+\begin{proof}
+    Notice that using $r$ random bits and $q$ queries, a verifier can query proofs
+    up to length $2^{r}q$. Therefore, without loss of generality, we can use proofs
+    of this length. For adaptive verifiers, the argument is similar, however, we
+    also take into account the different decisions the verifier can make based on
+    the characters it reads, which explains the $\Sigma$ term.
+\end{proof}
+
+\begin{lemma}[Derandomization]
+    $\pcp[l,r] \subseteq NTIME((2^{r} + l) \cdot poly(n))$
+\end{lemma}
+\begin{proof}
+    Let $(P,V)$ be a $\pcp$ system for $L$ where the PCP verifier
+    uses $r$ random bits to query a proof of length $l$. Consider the
+    decider $D(x,\pi)$ that loops over all possible choices of randomness,
+    tallies up the number of times $V$ accepts and accepts if and only if 
+    the tally is greater than a $1 - \epsilon_{c}$ fraction of the runs.
+    This verifier still needs to guess the proof, so it's a non-deterministic
+    Turing Machine.
+\end{proof}
+
+\begin{corollary}
+    $\pcp \subseteq NEXP$
+\end{corollary}
+
+Let's now show that $PSPACE \subseteq PCP$. In order to do this,
+we'll show $IP \subseteq PCP$.
+
+
+
+Before we dive into hardness of approximation and slowly develop the PCP theorem, here's the theorem:
+
+\begin{theorem}
+    Let $L \in$ NP. Then, $L$ has a PCP verifier $V$ with
+    $c \cdot \log n$ bits of randomness and $c$ queries, where $c$
+    is a constant.
+\end{theorem}
+
+Notice that the converse of this theorem holds trivially since the randomness
+is logarithmic, so we can enumerate over the randomness using a nondeterministic
+polynomial time Turing Machine.
+
+Notice that $2^{c \log{n}} \cdot c$ is an upper bound on the length of all proofs,
+since otherwise the verifier can't even pick bits of the proof to look at.
+
+Here's how we build a non-deterministic Turing Machine $N$ for L: (\textit{I don't 
+understand this argument.})
+
+On input $x$, guess a proof $\pi$ of length $2^{c \log{n}} \cdot c$.
+
+If $\forall r \in \{0,1\}^{c \log n}: V^{\pi}(x,r) = 1$, accept.
+Otherwise, reject.
+
+Since we're checking logarithmically many bits of the proof, we can even check exponential-sized proofs!
+
+The idea will be to endow the proof with a rich structure that allows checking global properties
+via local constraints.
+
+\newpage
+
+\subsection{Approximate Hardness of SAT}
+
+People in industry don't think SAT is hard: we have SAT solvers!
+
+\begin{definition}
+    Given a CNF $\phi$, opt($\phi$) is the maximum 
+    number of clauses that can be satisfied by a single
+    assignment.
+\end{definition}
+
+\begin{theorem}
+    There's a deterministic polynomial time algorithm that takes
+    in as input a CNF formula $\phi$ and finds $x$ satisfying
+    $\geq \frac{1}{2} \opt(\phi)$ clauses.
+\end{theorem}
+\begin{proof}
+    Let $\phi = C_{1} \land C_{2} \land ... \land C_{n}$.
+    For every $x_{i}$, set the value of $x_{i}$ to satisfy
+    at least half of the clauses where $x_{i}$ appears.
+
+    \textbf{How do you rigorously extend this to satisfy all clauses?}
+\end{proof}
+
+Notice that this is in fact better than how we introduced it.
+This algorithm actually satisfies half of all clauses!
+A corollary of this is $\opt(\phi) \geq m/2$.
+
+A natural question to ask after seeing this theorem is:
+Can you satisfy $(1 - \epsilon)\opt(\phi)$ clauses in polynomial
+time?
+
+The answer, unfortunately, turns out to be no.
+
+\begin{theorem}
+    For some constant $\epsilon > 0$, it is
+    NP-Hard to device for a given 3-CNF $\phi$ whether
+
+    \begin{itemize}
+        \item $\phi$ is satisfiable.
+        \item $\opt(\phi) \leq (1 - \epsilon)m$.
+    \end{itemize}
+\end{theorem}
+
+Notice that this theorem is an extremely strong
+answer to the previous question we asked. The following theorem
+would've sufficed:
+
+\begin{theorem}
+    For some constant $\epsilon > 0$, it is
+    NP-Hard to device for a given 3-CNF $\phi$ whether
+
+    \begin{itemize}
+        \item $\opt(\phi) \geq (1 - \epsilon_{1})m$
+        \item $\opt(\phi) \leq (1 - \epsilon_{2})m$.
+    \end{itemize}
+\end{theorem}
+
+\newpage
+
+\subsection{Approximate Hardness of Independent Set}
+
+\begin{theorem}
+    For any $\delta > 0$, it is NP-Hard to find
+    an independent set of size $\geq \delta \cdot \opt$.
+\end{theorem}
+
+Basically, this theorem tells us that if you want to approximate
+an independent set, you're doomed.
+
+The proof goes through using a reduction of SAT to INDSET.
+
+Recall that the reduction worked such that $\opt(\phi) = \opt(G)$.
+
+Therefore, approximation algorithms for INDSET translate to
+approximation algorithms for 3-SAT.
+
+Notice that this immediately carries over the previous approximation
+theorem for 3-SAT to INDSET. However, we're striving for a stronger result.
+
+In order to do this, we need a concept from graph theory.
+We now define powers of graphs.
+
+Let $G$ be an undirected graph. In $G^{k}$,
+two vertices are adjacent 
+
+\begin{definition}
+    Let $G$ be an undirected graph. Here's how we define $G^{k}$,
+
+    The vertex set of $G$ is all $k$-subsets of vertices in $G$.
+
+    $(S,T) \in G^{k}$ if and only if $G$ has an edge with both endpoints in $S \cup T$.
+\end{definition}
+
+\begin{lemma}
+    $\{S_{1},S_{2},...,S_{r}\}$ is an independent
+    set in $G^{k}$ if and only if $S_{1} \cup S_{2} \cup ... \cup S_{r}$
+    is independent in $G$.
+\end{lemma}
+
+Here's some combinatorics terminology:
+
+\begin{definition}
+    Let $S$ be a set. 
+
+    \[ {S \choose k}= \{ A \subseteq S: \lvert A \rvert = k \} \]
+\end{definition}
+
+You can think of ${n \choose k}$ as $n^k$ among friends.
+
+\begin{proof}
+    
+\end{proof}
+
+\subsection{Approximate Hardness of Vertex Cover}
+
+Recall that $S$ is a vertex cover if and only if
+$\bar{S}$ is an independent set.
+
+However, interestingly, it isn't hard to approximate
+vertex cover.
+
+\begin{theorem}
+    For \textbf{some} $\delta > 0$, it is NP-Hard 
+    to find a vertex cover of size $\leq (1 + \delta)(\opt(G))$.
+\end{theorem}
+\begin{proof}
+    For every clause, you get 7 vertices.
+\end{proof}
+
+However, we can't upgrade this to any $\delta > 0$,
+since we have an explicit algorithm to approximate
+vertex cover to a factor of 2!
+
+
+Notice that this doesn't contradict the inapproximability
+of independent set since 
+
+We now present a polynomial time algorithm to approximate vertex cover
+to size $\leq 2\opt$.
+
+The algorithm works as follows:
+
+Let $S = \varnothing$.
+
+While $E \neq \varnothing$:
+
+\begin{enumerate}
+    \item Take any edge $(u,v) \in E$.
+    \item Add $u,v$ to $S$.
+    \item Remove any edge incident on $u$ or $v$.
+\end{enumerate}
+
+The chosen edges in vertex cover form a matching.
+
+
+
+\newpage
+
+\subsection{The PCP Theorem}
+
+\begin{definition}
+    QUADEQ = $\{ Q: Q \text{ is a system of quadratic equations over } F_{2} \text{ that has a solution}\}$.
+\end{definition}
+
+Recall the LINEQ can be decided using Gaussian Elimination.
+
+\begin{lemma}
+    QUADEQ is NP-Complete.
+\end{lemma}
+\begin{proof}
+    Separately for each clause. Proof in Notability PCP document.
+\end{proof}
+
+\begin{theorem}[PCP Theorem, weak version]
+    Every language in NP has a PCP verifier with $O(1)$ queries and $poly(n)$ random bits.
+\end{theorem}
+\begin{proof}
+    It suffices to show that there's a PCP verifier for QUADEQ.
+
+    
+\end{proof}
+
+Sherstov doesn't think reducing the amount of randomness to $\log n$ is cool.
+
+\newpage
+
+\end{document}
+
+

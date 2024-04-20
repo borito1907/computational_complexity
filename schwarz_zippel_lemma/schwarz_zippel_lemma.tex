@@ -1,0 +1,60 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\usepackage{parskip}
+\newgeometry{vmargin={15mm}, hmargin={24mm,34mm}}
+\theoremstyle{definition} 
+\newtheorem{definition}{Definition}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{proposition}[theorem]{Proposition}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\xtoc}{\lvert x \rvert ^{c}}
+\newcommand{\dprime}{\prime\prime}
+\newcommand{\opt}{\text{opt}}
+\DeclareMathOperator*{\E}{\mathbb{E}}
+
+\title{Schwarz-Zippel Lemma}
+\date{March 2024}
+\author{Boran Erol}
+
+\begin{document}
+
+\maketitle
+
+Starting from Lecture 10 of Ryan O'Donnell CS Theory Toolkit. He also has some resources he recommends.
+
+We can construct and work with $F_{q}$ in $polylog(q)$ time. In certain rare cases,
+we need randomization.
+
+For $p$ a prime, $F_{p}$ is a field. In particular, it's a Euclidean domain, so you
+can efficiently find the inverse using the extended GCD algorithm by solving 
+Bezout's Identity.
+
+An important open problem is TCS is whether we can compute the gcd of two numbers
+using an efficient parallel algorithm.
+
+One catch to working with $F_{p}$ is that we sometimes need to find some prime $p$ that's
+of exponential size in $n$. We can work with such fields since representing elements of this field
+is polynomial time. However, how do we find such a $p$ in the first place? The answer is disappointing:
+sample a random number and test whether it's prime. We don't know whether a deterministic
+algorithm exists for finding primes. Notice that this is a Las Vegas algorithm and it's fast
+since primes are dense. This algorithm is in RP.
+
+
+
+\begin{lemma}[Schwarz-Zippel]
+    
+\end{lemma}
+
+\end{document}
+
+
